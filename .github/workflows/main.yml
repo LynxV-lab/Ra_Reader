@@ -204,3 +204,64 @@ jobs:
         with:
           name: Ra_Reader-Linux-x64
           path: release/Ra_Reader-Linux-x64.zip
+
+  # ==========================================================
+  # Linux ARM64
+  # ==========================================================
+
+  build-linux-arm64:
+    runs-on: ubuntu-24.04-arm
+
+    steps:
+      - name: Download source
+        uses: actions/checkout@v5
+
+      - name: Check architecture
+        run: |
+          uname -m
+
+      - name: Install Python and GUI dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 python3-pip python3-venv python3-tk zip
+
+      - name: Create Python environment
+        run: |
+          python3 -m venv venv
+          venv/bin/python -m pip install --upgrade pip
+          venv/bin/python -m pip install pyinstaller pillow
+
+      - name: Build Linux ARM64 executable
+        run: |
+          venv/bin/pyinstaller \
+            --noconfirm \
+            --clean \
+            --onefile \
+            --windowed \
+            --name "Ra_Reader" \
+            --add-data "Alice-Regular.ttf:." \
+            Ra_Reader.pyw
+
+      - name: Prepare Linux ARM64 distribution
+        run: |
+          mkdir -p release/Ra_Reader
+
+          cp dist/Ra_Reader release/Ra_Reader/Ra_Reader
+          chmod +x release/Ra_Reader/Ra_Reader
+
+          cp -R 0 release/Ra_Reader/0
+          cp -R 1 release/Ra_Reader/1
+          cp -R 2 release/Ra_Reader/2
+          cp -R 3 release/Ra_Reader/3
+
+          cd release
+
+          zip -r \
+            Ra_Reader-Linux-ARM64.zip \
+            Ra_Reader
+
+      - name: Upload Linux ARM64 distribution
+        uses: actions/upload-artifact@v5
+        with:
+          name: Ra_Reader-Linux-ARM64
+          path: release/Ra_Reader-Linux-ARM64.zip
