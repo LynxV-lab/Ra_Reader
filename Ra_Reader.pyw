@@ -28785,7 +28785,22 @@ class RaReader:
             except Exception:
                 return False
 
-        # Non-Windows fallback.
+        # macOS.
+        if sys.platform == 'darwin':
+            try:
+                subprocess.Popen(
+                    [
+                        'open',
+                        str(path)
+                    ]
+                )
+
+                return True
+
+            except Exception:
+                return False
+
+        # Linux / other Unix.
         try:
             subprocess.Popen(
                 [
