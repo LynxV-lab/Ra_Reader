@@ -7,16 +7,18 @@ on:
       - main
 
 jobs:
+  # ==========================================================
+  # Windows x64 / x86
+  # ==========================================================
+
   build-windows:
     strategy:
       matrix:
         include:
-          - arch: x64
-            python_arch: x64
+          - python_arch: x64
             artifact_name: Ra_Reader-Windows-x64
 
-          - arch: x86
-            python_arch: x86
+          - python_arch: x86
             artifact_name: Ra_Reader-Windows-x86
 
     runs-on: windows-latest
@@ -53,11 +55,32 @@ jobs:
           --add-data "Alice-Regular.ttf;."
           Ra_Reader.pyw
 
-      - name: Upload Windows build
+      - name: Prepare distribution
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "release/Ra_Reader" | Out-Null
+
+          Copy-Item "dist/Ra_Reader.exe" "release/Ra_Reader/Ra_Reader.exe"
+
+          Copy-Item "0" "release/Ra_Reader/0" -Recurse
+          Copy-Item "1" "release/Ra_Reader/1" -Recurse
+          Copy-Item "2" "release/Ra_Reader/2" -Recurse
+          Copy-Item "3" "release/Ra_Reader/3" -Recurse
+
+          Compress-Archive `
+            -Path "release/Ra_Reader" `
+            -DestinationPath "release/${{ matrix.artifact_name }}.zip"
+
+      - name: Upload Windows distribution
         uses: actions/upload-artifact@v5
         with:
           name: ${{ matrix.artifact_name }}
-          path: dist/Ra_Reader.exe
+          path: release/${{ matrix.artifact_name }}.zip
+
+
+  # ==========================================================
+  # macOS — Apple Silicon
+  # ==========================================================
 
   build-macos-apple-silicon:
     runs-on: macos-14
@@ -90,16 +113,94 @@ jobs:
             --name "Ra_Reader" \
             --icon "icon.icns" \
             --add-data "Alice-Regular.ttf:." \
+            --add-data "0:0" \
+            --add-data "1:1" \
+            --add-data "2:2" \
+            --add-data "3:3" \
             Ra_Reader.pyw
 
       - name: Package macOS app
         run: |
-          ditto -c -k --sequesterRsrc --keepParent \
-            "dist/Ra_Reader.app" \
-            "Ra_Reader-macOS-AppleSilicon.zip"
+          mkdir -p release
 
-      - name: Upload macOS build
+          ditto \
+            -c \
+            -k \
+            --sequesterRsrc \
+            --keepParent \
+            "dist/Ra_Reader.app" \
+            "release/Ra_Reader-macOS-AppleSilicon.zip"
+
+      - name: Upload macOS distribution
         uses: actions/upload-artifact@v5
         with:
           name: Ra_Reader-macOS-AppleSilicon
-          path: Ra_Reader-macOS-AppleSilicon.zip
+          path: release/Ra_Reader-macOS-AppleSilicon.zip
+
+
+  # ==========================================================
+  # Linux x64
+  # ==========================================================
+
+  build-linux-x64:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download source
+        uses: actions/checkout@v5
+
+      - name: Install Linux GUI dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-tk
+
+      - name: Install Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          architecture: x64
+
+      - name: Check Python architecture
+        run: |
+          python -c "import platform; print('Python architecture:', platform.machine())"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pyinstaller pillow
+
+      - name: Build Linux executable
+        run: |
+          pyinstaller \
+            --noconfirm \
+            --clean \
+            --onefile \
+            --windowed \
+            --name "Ra_Reader" \
+            --add-data "Alice-Regular.ttf:." \
+            Ra_Reader.pyw
+
+      - name: Prepare Linux distribution
+        run: |
+          mkdir -p release/Ra_Reader
+
+          cp dist/Ra_Reader release/Ra_Reader/Ra_Reader
+
+          chmod +x release/Ra_Reader/Ra_Reader
+
+          cp -R 0 release/Ra_Reader/0
+          cp -R 1 release/Ra_Reader/1
+          cp -R 2 release/Ra_Reader/2
+          cp -R 3 release/Ra_Reader/3
+
+          cd release
+
+          zip -r \
+            Ra_Reader-Linux-x64.zip \
+            Ra_Reader
+
+      - name: Upload Linux distribution
+        uses: actions/upload-artifact@v5
+        with:
+          name: Ra_Reader-Linux-x64
+          path: release/Ra_Reader-Linux-x64.zip
