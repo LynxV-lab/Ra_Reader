@@ -28627,22 +28627,27 @@ class RaReader:
 
             # ---------------------------------------------
             # MPC-HC
+            #
+            # Сначала проверяем ассоциированный плеер.
+            # Если это не MPC-HC, отдельно ищем
+            # установленный MPC-HC.
+            #
+            # Это важно в том числе для x86-сборки:
+            # 32-битный процесс Windows может видеть
+            # ассоциации файлов иначе, чем x64.
             # ---------------------------------------------
 
-            if (
-                associated
-                and (
-                    'mpc-hc'
-                    in associated_lower
-                    or
-                    'mpc_hc'
-                    in associated_lower
+            mpc = (
+                self.find_mpc_hc_executable(
+                    associated
                 )
-            ):
+            )
+
+            if mpc:
                 try:
                     subprocess.Popen(
                         [
-                            associated,
+                            str(mpc),
                             '/startpos',
                             mpc_timecode,
                             str(path)
@@ -28654,31 +28659,6 @@ class RaReader:
 
                 except Exception:
                     pass
-
-            # Если Windows association API не определил
-            # executable, пробуем установленный MPC-HC.
-            if not associated:
-                mpc = (
-                    self.find_mpc_hc_executable()
-                )
-
-                if mpc:
-                    try:
-                        subprocess.Popen(
-                            [
-                                str(mpc),
-                                '/startpos',
-                                mpc_timecode,
-                                str(path)
-                            ],
-                            close_fds=True
-                        )
-
-                        return True
-
-                    except Exception:
-                        pass
-
             # ---------------------------------------------
             # MPC-BE
             # Оставляем тот же формат времени.
