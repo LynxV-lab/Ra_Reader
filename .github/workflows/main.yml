@@ -1,4 +1,4 @@
-name: Build Ra_Reader for Windows
+name: Build Ra_Reader
 
 on:
   workflow_dispatch:
@@ -53,8 +53,53 @@ jobs:
           --add-data "Alice-Regular.ttf;."
           Ra_Reader.pyw
 
-      - name: Upload build
+      - name: Upload Windows build
         uses: actions/upload-artifact@v5
         with:
           name: ${{ matrix.artifact_name }}
           path: dist/Ra_Reader.exe
+
+  build-macos-apple-silicon:
+    runs-on: macos-14
+
+    steps:
+      - name: Download source
+        uses: actions/checkout@v5
+
+      - name: Install Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          architecture: arm64
+
+      - name: Check Python architecture
+        run: |
+          python -c "import platform; print('Python architecture:', platform.machine())"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pyinstaller pillow
+
+      - name: Build macOS app
+        run: |
+          pyinstaller \
+            --noconfirm \
+            --clean \
+            --windowed \
+            --name "Ra_Reader" \
+            --icon "icon.icns" \
+            --add-data "Alice-Regular.ttf:." \
+            Ra_Reader.pyw
+
+      - name: Package macOS app
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent \
+            "dist/Ra_Reader.app" \
+            "Ra_Reader-macOS-AppleSilicon.zip"
+
+      - name: Upload macOS build
+        uses: actions/upload-artifact@v5
+        with:
+          name: Ra_Reader-macOS-AppleSilicon
+          path: Ra_Reader-macOS-AppleSilicon.zip
