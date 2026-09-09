@@ -265,3 +265,63 @@ jobs:
         with:
           name: Ra_Reader-Linux-ARM64
           path: release/Ra_Reader-Linux-ARM64.zip
+
+  # ==========================================================
+  # macOS Intel x86_64
+  # ==========================================================
+
+  build-macos-intel:
+    runs-on: macos-15-intel
+
+    steps:
+      - name: Download source
+        uses: actions/checkout@v5
+
+      - name: Install Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          architecture: x64
+
+      - name: Check architecture
+        run: |
+          uname -m
+          python -c "import platform; print('Python architecture:', platform.machine())"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pyinstaller pillow
+
+      - name: Build macOS Intel app
+        run: |
+          pyinstaller \
+            --noconfirm \
+            --clean \
+            --windowed \
+            --name "Ra_Reader" \
+            --icon "icon.icns" \
+            --add-data "Alice-Regular.ttf:." \
+            --add-data "0:0" \
+            --add-data "1:1" \
+            --add-data "2:2" \
+            --add-data "3:3" \
+            Ra_Reader.pyw
+
+      - name: Package macOS Intel app
+        run: |
+          mkdir -p release
+
+          ditto \
+            -c \
+            -k \
+            --sequesterRsrc \
+            --keepParent \
+            "dist/Ra_Reader.app" \
+            "release/Ra_Reader-macOS-Intel-x64.zip"
+
+      - name: Upload macOS Intel distribution
+        uses: actions/upload-artifact@v5
+        with:
+          name: Ra_Reader-macOS-Intel-x64
+          path: release/Ra_Reader-macOS-Intel-x64.zip
