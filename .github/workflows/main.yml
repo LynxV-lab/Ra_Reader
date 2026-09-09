@@ -1,4 +1,4 @@
-name: Build Ra_Reader Windows x64
+name: Build Ra_Reader for Windows
 
 on:
   workflow_dispatch:
@@ -7,18 +7,34 @@ on:
       - main
 
 jobs:
-  build-windows-x64:
+  build-windows:
+    strategy:
+      matrix:
+        include:
+          - arch: x64
+            python_arch: x64
+            artifact_name: Ra_Reader-Windows-x64
+
+          - arch: x86
+            python_arch: x86
+            artifact_name: Ra_Reader-Windows-x86
+
     runs-on: windows-latest
 
     steps:
       - name: Download source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.12'
-          architecture: 'x64'
+          architecture: ${{ matrix.python_arch }}
+
+      - name: Check Python architecture
+        shell: cmd
+        run: |
+          python -c "import struct; print('Python architecture:', struct.calcsize('P') * 8, 'bit')"
 
       - name: Install dependencies
         run: |
@@ -37,8 +53,8 @@ jobs:
           --add-data "Alice-Regular.ttf;."
           Ra_Reader.pyw
 
-      - name: Upload Windows x64 build
-        uses: actions/upload-artifact@v4
+      - name: Upload build
+        uses: actions/upload-artifact@v5
         with:
-          name: Ra_Reader-Windows-x64
+          name: ${{ matrix.artifact_name }}
           path: dist/Ra_Reader.exe
